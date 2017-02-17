@@ -1,25 +1,23 @@
 {% extends "wrapper.html" %}
 {% block content %}
-    <div class="container-fluid" style="margin-top:1em">
-        <div class="row">
-            <div class="col-md-8 col-md-offset-2">
-                <h2>Résultats de la recherche</h2><br/>
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            <h2>Résultats de la recherche</h2><br/>
 
-                {% if not articles %}
-                    <h3>Aucun article.</h3>
-                {% else %}
-                    <ul class="list-group">
-                        {% for article in articles %}
-                            <li class="list-group-item">
-                                <div class="row">
-                                    <a href="#" class="col-md-6">{{ article[1] }}</a>
-                                    <div class="col-md-6 text-right"><span class="glyphicon glyphicon-time"></span> {{ article[4] }}</div>
-                                </div>
-                            </li>
-                        {% endfor %}
-                    </ul>
-                {% endif %}
-            </div>
+            {% if not articles %}
+                <h3>Aucun article.</h3>
+            {% else %}
+                <ul class="list-group">
+                    {% for article in articles %}
+                        <li class="list-group-item">
+                            <div class="row">
+                                <a href="/article/{{ article[2] }}" class="col-md-6">{{ article[1] }}</a>
+                                <div class="col-md-6 text-right"><span class="glyphicon glyphicon-time"></span> {{ article[4] }}</div>
+                            </div>
+                        </li>
+                    {% endfor %}
+                </ul>
+            {% endif %}
         </div>
     </div>
 {% endblock %}

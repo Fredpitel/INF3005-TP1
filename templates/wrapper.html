@@ -3,16 +3,15 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <link href="bootstrap/css/bootstrap.min.css" rel="stylesheet">
-        <link href="bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" />
-        <link href="css/tp1.css" rel="stylesheet" />
-        <title>Le blog à Fred</title>
+        <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+        <link href="/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" />
+        <title>CMS</title>
     </head>
     <body>
         <header class="navbar navbar-inverse navbar-fixed-top">
             <div class="container">
                 <nav>
-                    <a href="/" class="navbar-brand">Le blog à Fred</a>
+                    <a href="/" class="navbar-brand">CMS</a>
                     <ul class="nav navbar-nav">
                         <li><a href="/">Page d'acceuil</a></li>
                     </ul>
@@ -26,13 +25,15 @@
                     </form>
                 </nav>
             </div>
-        </header><br/>
+        </header>
 
-        {% block content %}{% endblock %}
+        <div class="container-fluid" style="margin-top: 7em">
+            {% block content %}{% endblock %}
+        </div>
 
         <footer>
-            <div class="row" style="margin-top:3em">
-                <div class="col-md-12 text-center">
+            <div class="row">
+                <div class="col-md-12 text-center footer navbar-fixed-bottom" style="margin-bottom: 3em">
                     <p>&copy; Frédéric Pitel 2017</p>
                 </div>
             </div>

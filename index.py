@@ -29,3 +29,15 @@ def page_accueil():
 def rechercher():
     articles = get_db().rechercher_articles(request.args['recherche'])
     return render_template('recherche.html', articles=articles)
+
+
+@app.route('/article/<identifier>')
+def page_article(identifier):
+    article = get_db().get_article(identifier)
+    if not article:
+        page_inexistante(HTTPException(404))
+    return render_template('article.html', article=article[0])
+
+@app.errorhandler(404)
+def page_inexistante(e):
+    return render_template('404.html'), 404
