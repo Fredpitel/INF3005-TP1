@@ -1,0 +1,31 @@
+{% extends "wrapper.html" %}
+{% block content %}
+    <div class="row">
+        <div class="col-md-8 col-md-offset-2">
+            {% if erreur %}
+                <p style="color:#700">{{ erreur }}</p>
+            {% endif %}
+            <form action="/nouveau" method="POST">
+                <div class="form-group row">
+                    <div class="form-group col-md-8">
+                        <label>Auteur</label>
+                        <input name="auteur" class="form-control" type="text" value="{{ auteur }}"required/>
+                    </div>
+                    <div class="form-group col-md-4">
+                        <label>Date de publication</label>
+                        <input name="date" class="form-control" type="date" value="{{ date }}" required/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Titre</label>
+                    <input name="titre" class="form-control" type="text" value="{{ titre }}" required/>
+                </div>
+                <div class="form-group">
+                    <label>Paragraphe</label>
+                    <textarea name="paragraphe" class="form-control col-8" type="textarea" rows="15" style="resize: none;" required>{{ paragraphe }}</textarea>
+                </div>
+                <button type="submit" class="btn btn-primary">Soumettre</button>
+            </form>
+        </div>
+    </div>
+{% endblock %}

@@ -6,3 +6,4 @@ create table article (
   date_publication text,
   paragraphe varchar(500)
 );
+
