@@ -36,16 +36,16 @@ class Database:
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
                        "WHERE identifiant ='{}';".format(identifiant))
-        return cursor.fetchall()
+        return cursor.fetchone()
 
-    def modifier_article(self, identifiant, titre, paragraphe):
+    def modifier_article(self, identifiant, titre, paragraphe, nouvel_identifiant):
         connection = self.get_connection()
         cursor = self.get_connection().cursor()
         try:
-            cursor.execute("UPDATE article SET titre = ?, paragraphe = ?"
-                           "WHERE identifiant = ?;", (titre, paragraphe, identifiant))
+            cursor.execute("UPDATE article SET titre = ?, paragraphe = ?, identifiant = ?"
+                           "WHERE identifiant = ?;", (titre, paragraphe, nouvel_identifiant, identifiant))
             connection.commit()
-            return self.get_article(identifiant)
+            return self.get_article(nouvel_identifiant)
         except Exception as e:
             return None
 

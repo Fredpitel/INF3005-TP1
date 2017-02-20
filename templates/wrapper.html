@@ -3,6 +3,7 @@
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link href="/css/tp1.css" rel="stylesheet" />
         <link href="/bootstrap/css/bootstrap.min.css" rel="stylesheet">
         <link href="/bootstrap/css/bootstrap-theme.min.css" rel="stylesheet" />
         <title>CMS</title>
@@ -28,17 +29,24 @@
             </div>
         </header>
 
-        <div class="container-fluid" style="margin-top: 7em">
-            {% block content %}{% endblock %}
-        </div>
-
-        <footer>
-            <div class="row">
-                <div class="col-md-12 text-center footer navbar-fixed-bottom" style="margin-bottom: 1em">
-                    <p>&copy; Frédéric Pitel 2017</p>
+        <article style="margin-top:5em;margin-bottom:5em;">
+            <div class="container-fluid">
+                <div class="row">
+                    <div class="col-md-8 col-md-offset-2">
+                        {% block content %}{% endblock %}
+                    </div>
                 </div>
+            </div>
+        </article>
+
+        <footer class="navbar navbar-inverse navbar-fixed-bottom">
+            <div class="container text-center">
+                <nav>
+                    <div class="navbar-brand" style="float: none;">&copy; Frédéric Pitel 2017</div>
+                </nav>
             </div>
         </footer>
     </body>
+    <script src="/jQuery/jquery.min.js"></script>
     <script src="/bootstrap/js/bootstrap.min.js"></script>
 </html>
