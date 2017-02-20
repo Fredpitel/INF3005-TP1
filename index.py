@@ -1,12 +1,11 @@
 # coding=utf-8
 from flask import Flask, render_template, g, request, redirect
 from database import Database
+from slugify import slugify
 import datetime
-import re
 
 app = Flask(__name__, static_url_path="", static_folder="static")
-_slugify_strip_re = re.compile(r'[^\w\s-]')
-_slugify_underscore_re = re.compile(r'[-\s]+')
+
 
 def get_db():
     db = getattr(g, '_database', None)
@@ -25,14 +24,18 @@ def close_connection(exception):
 @app.route('/')
 def page_accueil():
     articles = get_db().get_articles(datetime.date.today().isoformat())
-    return render_template('acceuil.html', articles=articles)
+    return render_template(
+        'acceuil.html',
+        articles=articles)
 
 
 @app.route('/article/<identifiant>')
 def page_article(identifiant):
     article = get_db().get_article(identifiant)
     try:
-        return render_template('article.html', article=article)
+        return render_template(
+            'article.html',
+            article=article)
     except Exception as e:
         return page_inexistante(e)
 
@@ -40,20 +43,26 @@ def page_article(identifiant):
 @app.route('/rechercher', methods=['GET'])
 def rechercher():
     articles = get_db().rechercher_articles(request.args['recherche'])
-    return render_template('recherche.html', articles=articles)
+    return render_template(
+        'recherche.html',
+        articles=articles)
 
 
 @app.route('/admin')
 def admin():
     articles = get_db().get_all_articles()
-    return render_template('admin.html', articles=articles)
+    return render_template(
+        'admin.html',
+        articles=articles)
 
 
 @app.route('/modifier/<identifiant>')
 def modifier_article(identifiant):
     article = get_db().get_article(identifiant)
     try:
-        return render_template('modifier.html', article=article)
+        return render_template(
+            'modifier.html',
+            article=article)
     except Exception as e:
         return page_inexistante(e)
 
@@ -67,23 +76,26 @@ def modifier():
     paragraphe = request.form['paragraphe']
     nouvel_identifiant = slugify(titre)
 
-    if get_db().get_article(nouvel_identifiant) is not None:
+    if identifiant != nouvel_identifiant \
+            and get_db().get_article(nouvel_identifiant) is not None:
         article = [None, titre, identifiant, auteur, date, paragraphe]
-        return render_template('modifier.html',
-                        article=article,
-                        erreur=u"Ce nom d'article existe déjà"), 400
+        return erreur_formulaire('modifier.html',
+                                 article,
+                                 u"Ce nom d'article existe déjà",
+                                 400)
 
     article = get_db().modifier_article(identifiant,
                                         titre,
                                         paragraphe,
                                         nouvel_identifiant)
     try:
-        return redirect("/article/{}".format(article[0][2]))
-    except Exception as e:
-        article = get_db().get_article(request.form['identifiant'])
-        return render_template('modifier.html',
-                               article=article,
-                               erreur="Erreur lors de la modification de l'article"), 500
+        return redirect("/article/{}".format(article[2]))
+    except Exception:
+        article = [None, titre, identifiant, auteur, date, paragraphe]
+        return erreur_formulaire('modifier.html',
+                                 article,
+                                 "Erreur lors de la modification de l'article",
+                                 500)
 
 
 @app.route('/admin_nouveau')
@@ -98,21 +110,31 @@ def nouveau():
     identifiant = slugify(request.form['titre'])
     paragraphe = request.form['paragraphe']
     date = request.form['date']
+    article = [None, titre, identifiant, auteur, date, paragraphe]
+
+    try:
+        datetime.datetime.strptime(date, "%Y-%m-%d")
+    except ValueError:
+        return erreur_formulaire('admin_nouveau.html',
+                                 article,
+                                 u"Le format de la date doit être AAAA-MM-JJ",
+                                 400)
 
     if get_db().get_article(identifiant) is not None:
-        article = [None, titre, identifiant, auteur, date, paragraphe]
-        return render_template('admin_nouveau.html',
-                               article=article,
-                               erreur=u"Ce nom d'article existe déjà"), 400
+        return erreur_formulaire('admin_nouveau.html',
+                                 article,
+                                 u"Ce nom d'article existe déjà",
+                                 400)
 
     article = get_db().nouveau(auteur, titre, identifiant, paragraphe, date)
     try:
-        return redirect("/article/{}".format(article[0][2]))
-    except Exception as e:
+        return redirect("/article/{}".format(article[2]))
+    except Exception:
         article = [None, titre, identifiant, auteur, date, paragraphe]
-        return render_template('admin_nouveau.html',
-                               article=article,
-                               erreur="Erreur lors de la publication de l'article"), 500
+        return erreur_formulaire('admin_nouveau.html',
+                                 article,
+                                 "Erreur lors de la publication de l'article",
+                                 500)
 
 
 @app.errorhandler(404)
@@ -120,23 +142,9 @@ def page_inexistante(e):
     return render_template('404.html'), 404
 
 
-def slugify(value):
-    """
-    Normalizes string, converts to lowercase, removes non-alpha characters,
-    and converts spaces to underscore.
-
-    From Django's "django/template/defaultfilters.py".
-    """
-    import unicodedata
-    if not isinstance(value, unicode):
-        value = unicode(value)
-    value = unicodedata.normalize('NFKD', value).encode('ascii', 'ignore')
-    value = unicode(_slugify_strip_re.sub('', value).strip().lower())
-    return _slugify_underscore_re.sub('_', value)
-
-
-@app.template_filter('slugify')
-def _slugify(string):
-    if not string:
-        return ""
-    return slugify(string)
+def erreur_formulaire(template, article, msg_erreur, code_erreur):
+    return render_template(
+        template,
+        article=article,
+        erreur=msg_erreur
+    ), code_erreur

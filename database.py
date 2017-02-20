@@ -1,5 +1,7 @@
 import sqlite3
 
+PATH_TO_DB = "C:\\INF3005\\TP1\\db\\article.db"
+
 
 class Database:
     def __init__(self):
@@ -7,7 +9,7 @@ class Database:
 
     def get_connection(self):
         if self.connection is None:
-            self.connection = sqlite3.connect("C:\\INF3005\\TP1\\db\\article.db")
+            self.connection = sqlite3.connect(PATH_TO_DB)
         return self.connection
 
     def disconnect(self):
@@ -29,7 +31,8 @@ class Database:
     def rechercher_articles(self, recherche):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
-                       "WHERE titre LIKE '%{}%' OR paragraphe LIKE '%{}%';".format(recherche, recherche))
+                       "WHERE titre LIKE '%{}%' OR paragraphe LIKE '%{}%';"
+                       .format(recherche, recherche))
         return cursor.fetchall()
 
     def get_article(self, identifiant):
@@ -38,14 +41,16 @@ class Database:
                        "WHERE identifiant ='{}';".format(identifiant))
         return cursor.fetchone()
 
-    def modifier_article(self, identifiant, titre, paragraphe, nouvel_identifiant):
+    def modifier_article(self, identifiant, titre, paragraphe, nouvel_id):
         connection = self.get_connection()
         cursor = self.get_connection().cursor()
         try:
-            cursor.execute("UPDATE article SET titre = ?, paragraphe = ?, identifiant = ?"
-                           "WHERE identifiant = ?;", (titre, paragraphe, nouvel_identifiant, identifiant))
+            cursor.execute("UPDATE article "
+                           "SET titre = ?, paragraphe = ?, identifiant = ?"
+                           "WHERE identifiant = ?;",
+                           (titre, paragraphe, nouvel_id, identifiant))
             connection.commit()
-            return self.get_article(nouvel_identifiant)
+            return self.get_article(nouvel_id)
         except Exception as e:
             return None
 

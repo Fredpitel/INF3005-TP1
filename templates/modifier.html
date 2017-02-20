@@ -19,7 +19,9 @@
         <input type="hidden" name="identifiant" value="{{ article[2] }}"/>
         <input type="hidden" name="date" value="{{ article[4] }}"/>
         <input type="hidden" name="auteur" value="{{ article[3] }}"/>
-
-        <button type="submit" class="btn btn-primary">Modifier</button>
+        <div class="form-group text-right">
+            <button type="submit" class="btn btn-primary">Modifier</button>
+            <a href="/admin" class="btn btn-default">Retour</a>
+        </div>
     </form>
 {% endblock %}
