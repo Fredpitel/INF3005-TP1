@@ -1,3 +1,4 @@
+# coding=utf-8
 import sqlite3
 
 PATH_TO_DB = "C:\\INF3005\\TP1\\db\\article.db"
