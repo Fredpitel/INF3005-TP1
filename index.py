@@ -1,9 +1,10 @@
 # coding=utf-8
-from flask import Flask, render_template, g, request, redirect
-from database import Database
 import datetime
 import urllib
+from flask import Flask, render_template, g, request, redirect, abort
+from database import Database
 from article import Article
+from erreur_formulaire import ErreurFormulaire
 
 app = Flask(__name__, static_url_path="", static_folder="static")
 
@@ -24,48 +25,47 @@ def close_connection(exception):
 
 @app.route('/')
 def page_accueil():
-    articles = get_db().get_articles(datetime.date.today().isoformat())
-    return render_template(
-        'acceuil.html',
-        articles=articles)
+    articles = get_db().get_derniers_articles(
+        datetime.date.today().isoformat())
+    return render_template('acceuil.html',
+                           articles=articles)
 
 
 @app.route('/article/<identifiant>')
 def page_article(identifiant):
-    article = get_db().get_article(urllib.quote(identifiant.encode('utf-8')))
-    if article is not None:
-        return render_template(
-            'article.html',
-            article=article)
-
-    return page_inexistante()
+    try:
+        article = get_db().get_article(
+            urllib.quote(identifiant.encode('utf-8')))
+        return render_template('article.html',
+                               article=article)
+    except:
+        abort(404)
 
 
 @app.route('/rechercher', methods=['GET'])
 def rechercher():
-    articles = get_db().rechercher_articles(request.args['recherche'].encode('utf-8'))
-    return render_template(
-        'recherche.html',
-        articles=articles)
+    articles = get_db().rechercher_articles(
+        request.args['recherche'].encode('utf-8'))
+    return render_template('recherche.html',
+                           articles=articles)
 
 
 @app.route('/admin')
 def admin():
     articles = get_db().get_all_articles()
-    return render_template(
-        'admin.html',
-        articles=articles)
+    return render_template('admin.html',
+                           articles=articles)
 
 
 @app.route('/modifier/<identifiant>')
 def modifier_article(identifiant):
-    article = get_db().get_article(urllib.quote(identifiant.encode('utf-8')))
     try:
-        return render_template(
-            'modifier.html',
-            article=article)
+        article = get_db().get_article(
+            urllib.quote(identifiant.encode('utf-8')))
+        return render_template('modifier.html',
+                               article=article)
     except:
-        return page_inexistante()
+        abort(404)
 
 
 @app.route('/modifier', methods=['POST'])
@@ -73,67 +73,40 @@ def modifier():
     article_original = get_db().get_article(request.form['identifiant'])
     article_modifie = article_from_form(request.form)
 
-    if article_modifie.titre != article_original.titre \
-            and get_db().get_article(article_modifie.identifiant) is not None:
-        return erreur_formulaire('admin_nouveau.html',
-                                 article_modifie,
-                                 u"Ce nom d'article existe déjà",
-                                 400)
+    if article_modifie.titre != article_original.titre:
+        valider_unique(article_modifie, 'modifier.html')
 
     try:
-        get_db().modifier_article(article_modifie, article_original.identifiant)
+        get_db().modifier_article(article_modifie,
+                                  article_original.identifiant)
         return redirect("/article/{}".format(article_modifie.identifiant))
     except:
-        return erreur_formulaire('modifier.html',
-                                 article_modifie,
-                                 "Erreur lors de la modification de l'article",
-                                 500)
+        raise ErreurFormulaire('modifier.html',
+                               article_modifie,
+                               "Erreur lors de la modification de l'article",
+                               500)
 
 
 @app.route('/admin_nouveau')
 def admin_nouveau():
-    return render_template('admin_nouveau.html', article=None)
+    return render_template('admin_nouveau.html',
+                           article=None)
 
 
 @app.route('/nouveau', methods=['POST'])
 def nouveau():
     article = article_from_form(request.form)
-
-    try:
-        datetime.datetime.strptime(article.date, "%Y-%m-%d")
-    except ValueError:
-        return erreur_formulaire('admin_nouveau.html',
-                                 article,
-                                 u"Le format de la date doit être AAAA-MM-JJ",
-                                 400)
-
-    if get_db().get_article(article.identifiant) is not None:
-        return erreur_formulaire('admin_nouveau.html',
-                                 article,
-                                 u"Ce nom d'article existe déjà",
-                                 400)
+    valider_date(article)
+    valider_unique(article, 'admin_nouveau.html')
 
     try:
         get_db().nouveau(article)
         return redirect("/article/{}".format(article.identifiant))
     except:
-        return erreur_formulaire('admin_nouveau.html',
-                                 article,
-                                 "Erreur lors de la publication de l'article",
-                                 500)
-
-
-@app.errorhandler(404)
-def page_inexistante():
-    return render_template('404.html'), 404
-
-
-def erreur_formulaire(template, article, msg_erreur, code_erreur):
-    return render_template(
-        template,
-        article=article,
-        erreur=msg_erreur
-    ), code_erreur
+        raise ErreurFormulaire('admin_nouveau.html',
+                               article,
+                               "Erreur lors de la publication de l'article",
+                               500)
 
 
 def article_from_form(formulaire):
@@ -143,3 +116,37 @@ def article_from_form(formulaire):
                     formulaire['auteur'],
                     formulaire['date'],
                     formulaire['paragraphe']])
+
+
+def valider_date(article):
+    try:
+        datetime.datetime.strptime(article.date, "%Y-%m-%d")
+    except ValueError:
+        raise ErreurFormulaire('admin_nouveau.html',
+                               article,
+                               u"Le format de la date doit être AAAA-MM-JJ",
+                               400)
+
+
+def valider_unique(article, template):
+    try:
+        get_db().get_article(article.identifiant)
+    except:
+        return
+    raise ErreurFormulaire(template,
+                           article,
+                           u"Ce nom d'article existe déjà",
+                           400)
+
+
+@app.errorhandler(404)
+def page_inexistante(e):
+    return render_template('404.html'), 404
+
+
+@app.errorhandler(ErreurFormulaire)
+def erreur_formulaire(e):
+    return render_template(e.template,
+                           article=e.article,
+                           erreur=e.message,
+                           ), e.code

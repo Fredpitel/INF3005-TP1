@@ -18,12 +18,19 @@ class Database:
         if self.connection is not None:
             self.connection.close()
 
+    def get_article(self, identifiant):
+        print identifiant
+        cursor = self.get_connection().cursor()
+        cursor.execute("SELECT * FROM article "
+                       "WHERE identifiant ='{}';".format(identifiant))
+        return Article(cursor.fetchone())
+
     def get_all_articles(self):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article;")
         return [Article(row) for row in cursor.fetchall()]
 
-    def get_articles(self, date):
+    def get_derniers_articles(self, date):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
                        "WHERE date_publication <= '{}' "
@@ -37,23 +44,16 @@ class Database:
                        .format(recherche, recherche))
         return [Article(row) for row in cursor.fetchall()]
 
-    def get_article(self, identifiant):
-        print identifiant
-        cursor = self.get_connection().cursor()
-        cursor.execute("SELECT * FROM article "
-                       "WHERE identifiant ='{}';".format(identifiant))
-        try:
-            return Article(cursor.fetchone())
-        except:
-            return None
-
     def modifier_article(self, article_modifie, id_original):
         connection = self.get_connection()
         cursor = self.get_connection().cursor()
         cursor.execute("UPDATE article "
                        "SET titre = ?, paragraphe = ?, identifiant = ?"
                        "WHERE identifiant = ?;",
-                       (article_modifie.titre, article_modifie.paragraphe, article_modifie.identifiant, id_original))
+                       (article_modifie.titre,
+                        article_modifie.paragraphe,
+                        article_modifie.identifiant,
+                        id_original))
         connection.commit()
 
     def nouveau(self, article):
@@ -61,5 +61,9 @@ class Database:
         cursor = self.get_connection().cursor()
         cursor.execute("INSERT INTO article "
                        "VALUES (null, ?, ?, ?, ?, ?)",
-                       (article.titre, article.identifiant, article.auteur, article.date, article.paragraphe))
+                       (article.titre,
+                        article.identifiant,
+                        article.auteur,
+                        article.date,
+                        article.paragraphe))
         connection.commit()

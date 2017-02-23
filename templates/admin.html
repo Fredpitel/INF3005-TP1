@@ -2,9 +2,9 @@
 {% block content %}
     <div class="row vertical-center">
         <h2 class="col-md-6">Articles</h2>
-        <form action="/admin_nouveau" class="col-md-6 text-right">
-            <button type="submit" class="btn btn-primary">Nouveau</button>
-        </form>
+        <div class="col-md-6 text-right">
+            <a href="/admin_nouveau" type="submit" class="btn btn-primary">Nouveau</a>
+        </div>
     </div><br/>
 
     {% if not articles %}
