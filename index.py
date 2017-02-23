@@ -1,8 +1,9 @@
 # coding=utf-8
 from flask import Flask, render_template, g, request, redirect
 from database import Database
-from slugify import slugify
 import datetime
+import urllib
+from article import Article
 
 app = Flask(__name__, static_url_path="", static_folder="static")
 
@@ -31,18 +32,18 @@ def page_accueil():
 
 @app.route('/article/<identifiant>')
 def page_article(identifiant):
-    article = get_db().get_article(identifiant)
-    try:
+    article = get_db().get_article(urllib.quote(identifiant.encode('utf-8')))
+    if article is not None:
         return render_template(
             'article.html',
             article=article)
-    except Exception as e:
-        return page_inexistante(e)
+
+    return page_inexistante()
 
 
 @app.route('/rechercher', methods=['GET'])
 def rechercher():
-    articles = get_db().rechercher_articles(request.args['recherche'])
+    articles = get_db().rechercher_articles(request.args['recherche'].encode('utf-8'))
     return render_template(
         'recherche.html',
         articles=articles)
@@ -58,42 +59,33 @@ def admin():
 
 @app.route('/modifier/<identifiant>')
 def modifier_article(identifiant):
-    article = get_db().get_article(identifiant)
+    article = get_db().get_article(urllib.quote(identifiant.encode('utf-8')))
     try:
         return render_template(
             'modifier.html',
             article=article)
-    except Exception as e:
-        return page_inexistante(e)
+    except:
+        return page_inexistante()
 
 
 @app.route('/modifier', methods=['POST'])
 def modifier():
-    identifiant = request.form['identifiant']
-    titre = request.form['titre']
-    auteur = request.form['auteur']
-    date = request.form['date']
-    paragraphe = request.form['paragraphe']
-    nouvel_identifiant = slugify(titre)
+    article_original = get_db().get_article(request.form['identifiant'])
+    article_modifie = article_from_form(request.form)
 
-    if identifiant != nouvel_identifiant \
-            and get_db().get_article(nouvel_identifiant) is not None:
-        article = [None, titre, identifiant, auteur, date, paragraphe]
-        return erreur_formulaire('modifier.html',
-                                 article,
+    if article_modifie.titre != article_original.titre \
+            and get_db().get_article(article_modifie.identifiant) is not None:
+        return erreur_formulaire('admin_nouveau.html',
+                                 article_modifie,
                                  u"Ce nom d'article existe déjà",
                                  400)
 
-    article = get_db().modifier_article(identifiant,
-                                        titre,
-                                        paragraphe,
-                                        nouvel_identifiant)
     try:
-        return redirect("/article/{}".format(article[2]))
-    except Exception:
-        article = [None, titre, identifiant, auteur, date, paragraphe]
+        get_db().modifier_article(article_modifie, article_original.identifiant)
+        return redirect("/article/{}".format(article_modifie.identifiant))
+    except:
         return erreur_formulaire('modifier.html',
-                                 article,
+                                 article_modifie,
                                  "Erreur lors de la modification de l'article",
                                  500)
 
@@ -105,32 +97,26 @@ def admin_nouveau():
 
 @app.route('/nouveau', methods=['POST'])
 def nouveau():
-    auteur = request.form['auteur']
-    titre = request.form['titre']
-    identifiant = slugify(request.form['titre'])
-    paragraphe = request.form['paragraphe']
-    date = request.form['date']
-    article = [None, titre, identifiant, auteur, date, paragraphe]
+    article = article_from_form(request.form)
 
     try:
-        datetime.datetime.strptime(date, "%Y-%m-%d")
+        datetime.datetime.strptime(article.date, "%Y-%m-%d")
     except ValueError:
         return erreur_formulaire('admin_nouveau.html',
                                  article,
                                  u"Le format de la date doit être AAAA-MM-JJ",
                                  400)
 
-    if get_db().get_article(identifiant) is not None:
+    if get_db().get_article(article.identifiant) is not None:
         return erreur_formulaire('admin_nouveau.html',
                                  article,
                                  u"Ce nom d'article existe déjà",
                                  400)
 
-    article = get_db().nouveau(auteur, titre, identifiant, paragraphe, date)
     try:
-        return redirect("/article/{}".format(article[2]))
-    except Exception:
-        article = [None, titre, identifiant, auteur, date, paragraphe]
+        get_db().nouveau(article)
+        return redirect("/article/{}".format(article.identifiant))
+    except:
         return erreur_formulaire('admin_nouveau.html',
                                  article,
                                  "Erreur lors de la publication de l'article",
@@ -138,7 +124,7 @@ def nouveau():
 
 
 @app.errorhandler(404)
-def page_inexistante(e):
+def page_inexistante():
     return render_template('404.html'), 404
 
 
@@ -148,3 +134,12 @@ def erreur_formulaire(template, article, msg_erreur, code_erreur):
         article=article,
         erreur=msg_erreur
     ), code_erreur
+
+
+def article_from_form(formulaire):
+    return Article([None,
+                    formulaire['titre'],
+                    urllib.quote(formulaire['titre'].encode('utf-8')),
+                    formulaire['auteur'],
+                    formulaire['date'],
+                    formulaire['paragraphe']])

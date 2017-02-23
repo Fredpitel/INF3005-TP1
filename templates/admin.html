@@ -13,10 +13,10 @@
         <ul class="list-group">
             {% for article in articles %}
                 <li class="list-group-item">
-                    <h4 class="list-group-item-heading"><a href="/article/{{ article[2] }}" class="list-group-item-heading">{{ article[1] }}</a></h4>
+                    <h4 class="list-group-item-heading"><a href="/article/{{ article.identifiant }}" class="list-group-item-heading">{{ article.titre }}</a></h4>
                     <div class="row text-muted">
-                        <div class="col-md-6"><span class="glyphicon glyphicon-time"></span> {{ article[4] }}</div>
-                        <a href="/modifier/{{ article[2] }}" class="col-md-6 text-right">Modifier</a>
+                        <div class="col-md-6"><span class="glyphicon glyphicon-time"></span> {{ article.date }}</div>
+                        <a href="/modifier/{{ article.identifiant }}" class="col-md-6 text-right">Modifier</a>
                     </div>
                 </li>
                 {% if not loop.last %}

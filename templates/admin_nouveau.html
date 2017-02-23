@@ -7,20 +7,20 @@
         <div class="form-group row">
             <div class="form-group col-md-8">
                 <label>Auteur</label>
-                <input name="auteur" class="form-control" type="text" value="{{ article[3] }}"required/>
+                <input name="auteur" class="form-control" type="text" value="{{ article.auteur }}"required/>
             </div>
             <div class="form-group col-md-4">
                 <label>Date de publication</label>
-                <input name="date" placeholder="AAAA-MM-JJ" class="form-control" type="date" value="{{ article[4] }}" required/>
+                <input name="date" placeholder="AAAA-MM-JJ" class="form-control" type="date" value="{{ article.date }}" required/>
             </div>
         </div>
         <div class="form-group">
             <label>Titre</label>
-            <input name="titre" class="form-control" type="text" value="{{ article[1] }}" required/>
+            <input name="titre" class="form-control" type="text" value="{{ article.titre }}" required/>
         </div>
         <div class="form-group">
             <label>Paragraphe</label>
-            <textarea name="paragraphe" class="form-control col-8" type="textarea" rows="15" style="resize: none; text-align justify;" required>{{ article[5] }}</textarea>
+            <textarea name="paragraphe" class="form-control col-8" type="textarea" rows="15" style="resize: none; text-align justify;" required>{{ article.paragraphe }}</textarea>
         </div>
         <div class="form-group text-right">
             <button type="submit" class="btn btn-primary">Soumettre</button>

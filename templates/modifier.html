@@ -6,19 +6,19 @@
     <form action="/modifier" method="POST">
         <div class="form-group">
           <label>Titre</label>
-          <input name="titre" class="form-control" type="text" value="{{ article[1] }}"/>
+          <input name="titre" class="form-control" type="text" value="{{ article.titre }}"/>
         </div>
         <div class="form-group">
           <label class="col-2 col-form-label">Paragraphe</label>
-          <textarea name="paragraphe" class="form-control" rows="15" style="resize: none; text-align:justify;">{{ article[5] }}</textarea>
+          <textarea name="paragraphe" class="form-control" rows="15" style="resize: none; text-align:justify;">{{ article.paragraphe }}</textarea>
         </div>
         <div class="row text-muted">
-            <div class="col-md-6">Auteur: {{ article[3] }}</div>
-            <div class="col-md-6 text-right"><span class="glyphicon glyphicon-time"></span> {{ article[4] }}</div>
+            <div class="col-md-6">Auteur: {{ article.auteur }}</div>
+            <div class="col-md-6 text-right"><span class="glyphicon glyphicon-time"></span> {{ article.date }}</div>
         </div><br/>
-        <input type="hidden" name="identifiant" value="{{ article[2] }}"/>
-        <input type="hidden" name="date" value="{{ article[4] }}"/>
-        <input type="hidden" name="auteur" value="{{ article[3] }}"/>
+        <input type="hidden" name="identifiant" value="{{ article.identifiant }}"/>
+        <input type="hidden" name="date" value="{{ article.date }}"/>
+        <input type="hidden" name="auteur" value="{{ article.auteur }}"/>
         <div class="form-group text-right">
             <button type="submit" class="btn btn-primary">Modifier</button>
             <a href="/admin" class="btn btn-default">Retour</a>
