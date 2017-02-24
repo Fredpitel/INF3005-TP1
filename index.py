@@ -1,10 +1,12 @@
 # coding=utf-8
 import datetime
 import urllib
+import re
+from unidecode import unidecode
 from flask import Flask, render_template, g, request, redirect, abort
 from database import Database
 from article import Article
-from erreur_formulaire import ErreurFormulaire
+from erreur_formulaire import FormInputError
 
 app = Flask(__name__, static_url_path="", static_folder="static")
 
@@ -34,8 +36,7 @@ def page_accueil():
 @app.route('/article/<identifiant>')
 def page_article(identifiant):
     try:
-        article = get_db().get_article(
-            urllib.quote(identifiant.encode('utf-8')))
+        article = get_db().get_article(urllib.quote(identifiant))
         return render_template('article.html',
                                article=article)
     except:
@@ -47,6 +48,7 @@ def rechercher():
     articles = get_db().rechercher_articles(
         request.args['recherche'].encode('utf-8'))
     return render_template('recherche.html',
+                           recherche=request.args['recherche'],
                            articles=articles)
 
 
@@ -60,8 +62,7 @@ def admin():
 @app.route('/modifier/<identifiant>')
 def modifier_article(identifiant):
     try:
-        article = get_db().get_article(
-            urllib.quote(identifiant.encode('utf-8')))
+        article = get_db().get_article(urllib.quote(identifiant))
         return render_template('modifier.html',
                                article=article)
     except:
@@ -81,10 +82,10 @@ def modifier():
                                   article_original.identifiant)
         return redirect("/article/{}".format(article_modifie.identifiant))
     except:
-        raise ErreurFormulaire('modifier.html',
-                               article_modifie,
-                               "Erreur lors de la modification de l'article",
-                               500)
+        raise FormInputError('modifier.html',
+                             article_modifie,
+                             "Erreur lors de la modification de l'article",
+                             500)
 
 
 @app.route('/admin_nouveau')
@@ -103,16 +104,16 @@ def nouveau():
         get_db().nouveau(article)
         return redirect("/article/{}".format(article.identifiant))
     except:
-        raise ErreurFormulaire('admin_nouveau.html',
-                               article,
-                               "Erreur lors de la publication de l'article",
-                               500)
+        raise FormInputError('admin_nouveau.html',
+                             article,
+                             "Erreur lors de la publication de l'article",
+                             500)
 
 
 def article_from_form(formulaire):
     return Article([None,
                     formulaire['titre'],
-                    urllib.quote(formulaire['titre'].encode('utf-8')),
+                    urllib.quote(string_to_url(formulaire['titre'])),
                     formulaire['auteur'],
                     formulaire['date'],
                     formulaire['paragraphe']])
@@ -122,10 +123,10 @@ def valider_date(article):
     try:
         datetime.datetime.strptime(article.date, "%Y-%m-%d")
     except ValueError:
-        raise ErreurFormulaire('admin_nouveau.html',
-                               article,
-                               u"Le format de la date doit être AAAA-MM-JJ",
-                               400)
+        raise FormInputError('admin_nouveau.html',
+                             article,
+                             u"Le format de la date doit être AAAA-MM-JJ",
+                             400)
 
 
 def valider_unique(article, template):
@@ -133,10 +134,15 @@ def valider_unique(article, template):
         get_db().get_article(article.identifiant)
     except:
         return
-    raise ErreurFormulaire(template,
-                           article,
-                           u"Ce nom d'article existe déjà",
-                           400)
+    raise FormInputError(template,
+                         article,
+                         u"Ce nom d'article existe déjà",
+                         400)
+
+
+def string_to_url(string):
+    string = unidecode(string.lower())
+    return re.sub('[\".]', '', string)
 
 
 @app.errorhandler(404)
@@ -144,7 +150,7 @@ def page_inexistante(e):
     return render_template('404.html'), 404
 
 
-@app.errorhandler(ErreurFormulaire)
+@app.errorhandler(FormInputError)
 def erreur_formulaire(e):
     return render_template(e.template,
                            article=e.article,

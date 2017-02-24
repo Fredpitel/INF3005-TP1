@@ -1,5 +1,5 @@
 # coding=utf-8
-class ErreurFormulaire(Exception):
+class FormInputError(Exception):
     def __init__(self, template, article, message, code):
         self.template = template
         self.article = article
