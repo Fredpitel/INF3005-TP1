@@ -1,8 +1,6 @@
 # coding=utf-8
-import datetime
-import urllib
 import re
-from unidecode import unidecode
+import datetime
 from flask import Flask, render_template, g, request, redirect, abort
 from database import Database
 from article import Article
@@ -27,8 +25,7 @@ def close_connection(exception):
 
 @app.route('/')
 def page_accueil():
-    articles = get_db().get_derniers_articles(
-        datetime.date.today().isoformat())
+    articles = get_db().get_derniers_articles()
     return render_template('acceuil.html',
                            articles=articles)
 
@@ -36,7 +33,7 @@ def page_accueil():
 @app.route('/article/<identifiant>')
 def page_article(identifiant):
     try:
-        article = get_db().get_article(urllib.quote(identifiant))
+        article = get_db().get_article(identifiant)
         return render_template('article.html',
                                article=article)
     except:
@@ -62,7 +59,7 @@ def admin():
 @app.route('/modifier/<identifiant>')
 def modifier_article(identifiant):
     try:
-        article = get_db().get_article(urllib.quote(identifiant))
+        article = get_db().get_article(identifiant)
         return render_template('modifier.html',
                                article=article)
     except:
@@ -80,7 +77,7 @@ def modifier():
     try:
         get_db().modifier_article(article_modifie,
                                   article_original.identifiant)
-        return redirect("/article/{}".format(article_modifie.identifiant))
+        return redirect("/admin")
     except:
         raise FormInputError('modifier.html',
                              article_modifie,
@@ -97,12 +94,13 @@ def admin_nouveau():
 @app.route('/nouveau', methods=['POST'])
 def nouveau():
     article = article_from_form(request.form)
+    valider_identifiant(article)
     valider_date(article)
     valider_unique(article, 'admin_nouveau.html')
 
     try:
         get_db().nouveau(article)
-        return redirect("/article/{}".format(article.identifiant))
+        return redirect("/admin")
     except:
         raise FormInputError('admin_nouveau.html',
                              article,
@@ -113,10 +111,18 @@ def nouveau():
 def article_from_form(formulaire):
     return Article([None,
                     formulaire['titre'],
-                    urllib.quote(string_to_url(formulaire['titre'])),
+                    formulaire['identifiant'].lower(),
                     formulaire['auteur'],
                     formulaire['date'],
                     formulaire['paragraphe']])
+
+
+def valider_identifiant(article):
+    if re.search('[^a-zA-Z0-9-_]', article.identifiant) is not None:
+        raise FormInputError('admin_nouveau.html',
+                             article,
+                             u"L'identifiant ne doit contenir que des caractères alphanumériques",
+                             400)
 
 
 def valider_date(article):
@@ -138,11 +144,6 @@ def valider_unique(article, template):
                          article,
                          u"Ce nom d'article existe déjà",
                          400)
-
-
-def string_to_url(string):
-    string = unidecode(string.lower())
-    return re.sub('[\".]', '', string)
 
 
 @app.errorhandler(404)

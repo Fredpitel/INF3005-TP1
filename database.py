@@ -1,8 +1,9 @@
 # coding=utf-8
 import sqlite3
+import datetime
 from article import Article
 
-PATH_TO_DB = "C:\\INF3005\\TP1\\db\\article.db"
+PATH_TO_DB = "db/article.db"
 
 
 class Database:
@@ -19,10 +20,11 @@ class Database:
             self.connection.close()
 
     def get_article(self, identifiant):
-        print identifiant
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
-                       "WHERE identifiant ='{}';".format(identifiant))
+                       "WHERE identifiant = '{}'"
+                       "AND date_publication <= '{}';"
+                       .format(identifiant, self.get_date()))
         return Article(cursor.fetchone())
 
     def get_all_articles(self):
@@ -30,18 +32,20 @@ class Database:
         cursor.execute("SELECT * FROM article;")
         return [Article(row) for row in cursor.fetchall()]
 
-    def get_derniers_articles(self, date):
+    def get_derniers_articles(self):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
-                       "WHERE date_publication <= '{}' "
-                       "ORDER BY date_publication DESC LIMIT 5;".format(date))
+                       "WHERE date_publication <= '{}'"
+                       "ORDER BY date_publication DESC LIMIT 5;"
+                       .format(self.get_date()))
         return [Article(row) for row in cursor.fetchall()]
 
     def rechercher_articles(self, recherche):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
-                       "WHERE titre LIKE '%{}%' OR paragraphe LIKE '%{}%';"
-                       .format(recherche, recherche))
+                       "WHERE titre LIKE '%{}%' OR paragraphe LIKE '%{}%'"
+                       "AND date_publication <= '{}';"
+                       .format(recherche, recherche, self.get_date()))
         return [Article(row) for row in cursor.fetchall()]
 
     def modifier_article(self, article_modifie, id_original):
@@ -67,3 +71,6 @@ class Database:
                         article.date,
                         article.paragraphe))
         connection.commit()
+
+    def get_date(self):
+        return datetime.date.today().isoformat()
