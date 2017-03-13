@@ -25,7 +25,8 @@ def close_connection(exception):
 
 @app.route('/')
 def page_accueil():
-    articles = get_db().get_derniers_articles()
+    date = datetime.date.today().isoformat()
+    articles = get_db().get_derniers_articles(date)
     return render_template('acceuil.html',
                            articles=articles)
 
@@ -34,6 +35,7 @@ def page_accueil():
 def page_article(identifiant):
     try:
         article = get_db().get_article(identifiant)
+        article = filtrer_par_date([article])[0]
         return render_template('article.html',
                                article=article)
     except:
@@ -44,6 +46,7 @@ def page_article(identifiant):
 def rechercher():
     articles = get_db().rechercher_articles(
         request.args['recherche'].encode('utf-8'))
+    articles = filtrer_par_date(articles)
     return render_template('recherche.html',
                            recherche=request.args['recherche'],
                            articles=articles)
@@ -81,7 +84,7 @@ def modifier():
     except:
         raise FormInputError('modifier.html',
                              article_modifie,
-                             "Erreur lors de la modification de l'article",
+                             "Erreur lors de la modification de l'article.",
                              500)
 
 
@@ -104,8 +107,16 @@ def nouveau():
     except:
         raise FormInputError('admin_nouveau.html',
                              article,
-                             "Erreur lors de la publication de l'article",
+                             "Erreur lors de la publication de l'article.",
                              500)
+
+
+def filtrer_par_date(articles):
+    for article in articles:
+        if article.date > datetime.date.today().isoformat():
+            articles.remove(article)
+
+    return articles
 
 
 def article_from_form(formulaire):
@@ -118,10 +129,10 @@ def article_from_form(formulaire):
 
 
 def valider_identifiant(article):
-    if re.search('[^a-zA-Z0-9-_]', article.identifiant) is not None:
+    if re.search('[^a-z0-9-_]', article.identifiant) is not None:
         raise FormInputError('admin_nouveau.html',
                              article,
-                             u"L'identifiant ne doit contenir que des caractères alphanumériques",
+                             u"L'identifiant ne peut contenir que des caractères alphanumériques.",
                              400)
 
 
@@ -131,7 +142,7 @@ def valider_date(article):
     except ValueError:
         raise FormInputError('admin_nouveau.html',
                              article,
-                             u"Le format de la date doit être AAAA-MM-JJ",
+                             u"Le format de la date doit être AAAA-MM-JJ.",
                              400)
 
 
@@ -142,7 +153,7 @@ def valider_unique(article, template):
         return
     raise FormInputError(template,
                          article,
-                         u"Ce nom d'article existe déjà",
+                         u"Cet identifiant d'article existe déjà.",
                          400)
 
 

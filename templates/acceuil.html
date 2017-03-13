@@ -10,6 +10,7 @@
                 <li class="list-group-item">
                     <h4><a href="/article/{{ article.identifiant }}" class="list-group-item-heading">{{ article.titre }}</a></h4>
                     <p class ="list-group-item-text" style="text-align:justify;">{{ article.paragraphe }}</p><br/>
+                    <div class="text-muted">Id: {{ article.identifiant }}</div>
                     <div class="row text-muted">
                         <div class="col-md-6">Auteur: {{ article.auteur }}</div>
                         <div class="col-md-6 text-right"><span class="glyphicon glyphicon-time"></span> {{ article.date }}</div>
