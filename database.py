@@ -2,7 +2,7 @@
 import sqlite3
 from article import Article
 
-PATH_TO_DB = "C:\\INF3005\\TP1\\db\\article.db"
+PATH_TO_DB = "db/article.db"
 
 
 class Database:
