@@ -2,7 +2,7 @@
 import sqlite3
 from article import Article
 
-PATH_TO_DB = "db/article.db"
+PATH_TO_DB = "db/cms.db"
 
 
 class Database:
@@ -21,8 +21,8 @@ class Database:
     def get_article(self, identifiant):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
-                       "WHERE identifiant = '{}';"
-                       .format(identifiant))
+                       "WHERE identifiant = ?;",
+                       (identifiant,))
         return Article(cursor.fetchone())
 
     def get_all_articles(self):
@@ -33,16 +33,16 @@ class Database:
     def get_derniers_articles(self, date):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
-                       "WHERE date_publication <= '{}'"
-                       "ORDER BY date_publication DESC LIMIT 5;"
-                       .format(date))
+                       "WHERE date_publication <= ? "
+                       "ORDER BY date_publication DESC LIMIT 5;",
+                       (date,))
         return [Article(row) for row in cursor.fetchall()]
 
     def rechercher_articles(self, recherche):
         cursor = self.get_connection().cursor()
         cursor.execute("SELECT * FROM article "
-                       "WHERE titre LIKE '%{}%' OR paragraphe LIKE '%{}%';"
-                       .format(recherche, recherche))
+                       "WHERE titre LIKE ? OR paragraphe LIKE ?;",
+                       (recherche, recherche))
         return [Article(row) for row in cursor.fetchall()]
 
     def modifier_article(self, article_modifie, id_original):
@@ -61,10 +61,34 @@ class Database:
         connection = self.get_connection()
         cursor = self.get_connection().cursor()
         cursor.execute("INSERT INTO article "
-                       "VALUES (null, ?, ?, ?, ?, ?)",
+                       "VALUES (null, ?, ?, ?, ?, ?);",
                        (article.titre,
                         article.identifiant,
                         article.auteur,
                         article.date,
                         article.paragraphe))
+        connection.commit() 
+
+    def save_session(self, identifiant, username):
+        connection = self.get_connection()
+        cursor = self.get_connection().cursor()
+        cursor.execute("INSERT INTO session "
+                       "VALUES (?, ?);", 
+                       (identifiant, username))
         connection.commit()
+
+    def delete_session(self, identifiant):
+        connection = self.get_connection()
+        cursor = self.get_connection().cursor()
+        cursor.execute("DELETE FROM session "
+                       "WHERE id = ?;", 
+                       (identifiant,))
+        connection.commit()
+
+    def get_user_infos(self, username):
+        connection = self.get_connection()
+        cursor = self.get_connection().cursor()
+        cursor.execute("SELECT salt, hash FROM user "
+                       "WHERE username = ?;", 
+                       (username,))
+        return cursor.fetchone()  

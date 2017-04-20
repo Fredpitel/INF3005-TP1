@@ -21,7 +21,7 @@ def authentication_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not is_authenticated(session):
-            return redirect('/login')
+            return redirect('/login_form')
         return f(*args, **kwargs)
     return decorated
 

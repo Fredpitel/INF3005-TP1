@@ -1,5 +1,7 @@
 # coding: utf8
 
+import datetime
+
 def filtrer_par_date(articles):
     for article in articles:
         if article.date > datetime.date.today().isoformat():

@@ -1,10 +1,13 @@
 # coding=utf-8
-from flask import Flask, render_template, g, request, redirect, abort, Response
+
+from flask import Flask, render_template, g, request, redirect, abort, session
 from database import Database
 from article import Article
 from erreur_formulaire import FormInputError
 from authentification import authentication_required
 from validations_formulaire import *
+import hashlib
+import uuid
 
 app = Flask(__name__, static_url_path="", static_folder="static")
 
@@ -26,8 +29,12 @@ def close_connection(exception):
 @app.route('/')
 def page_accueil():
     username = None
-    #if 'id' in session:
-        #username = get_db().get_session(session['id'])
+    try:
+        print session['id']
+    except:
+        pass
+    if 'id' in session:
+        username = get_db().get_username(session['id'])
 
     date = datetime.date.today().isoformat()
     articles = get_db().get_derniers_articles(date)
@@ -51,6 +58,7 @@ def page_article(identifiant):
 def rechercher():
     articles = get_db().rechercher_articles(
         request.args['recherche'].encode('utf-8'))
+
     articles = filtrer_par_date(articles)
     return render_template('recherche.html',
                            recherche=request.args['recherche'],
@@ -79,19 +87,18 @@ def modifier_article(identifiant):
 @app.route('/modifier', methods=['POST'])
 @authentication_required
 def modifier():
-    article_original = get_db().get_article(request.form['identifiant'])
-    article_modifie = article_from_form(request.form)
+    #article_original = get_db().get_article(request.form['identifiant'])
+    article = article_from_form(request.form)
 
-    if article_modifie.titre != article_original.titre:
-        valider_unique(article_modifie, 'modifier.html')
+    if article.identifiant != request.form['identifiant']:
+        valider_unique(article, 'modifier.html')
 
     try:
-        get_db().modifier_article(article_modifie,
-                                  article_original.identifiant)
+        get_db().modifier_article(article, request.form['identifiant'])
         return redirect("/admin")
     except:
         raise FormInputError('modifier.html',
-                             article_modifie,
+                             article,
                              "Erreur lors de la modification de l'article.",
                              500)
 
@@ -121,17 +128,40 @@ def nouveau():
                              500)
 
 
-@app.route('/login')
-def login():
-    print request.headers["Referer"]
+@app.route('/login_form')
+def login_form():
     return render_template('login.html',
                            referer=request.headers["Referer"])
 
 
+@app.route('/login', methods=['POST'])
+def login():
+    try:
+        user = get_db().get_user_infos(request.form['username'])
+        hashed_password = hashlib.sha512(request.form['password'] + user[0]).hexdigest()
+
+        if hashed_password == user[1]:
+            id_session = uuid.uuid4().hex
+            get_db().save_session(id_session, username)
+            session['id'] = id_session
+
+        return redirect('/')
+    except Exception as e:
+        print e
+        raise FormInputError('login.html',
+                             None,
+                             "Nom d'usager ou mot de passe incorrect.",
+                             403)
+
+
 @app.route('/logout')
+@authentication_required
 def logout():
-    session.id = None
-    return render_template('acceuil.html')
+    if "id" in session:
+        id_session = session["id"]
+        session.pop('id', None)
+        get_db().delete_session(id_session)
+    return redirect('/')
 
 
 @app.errorhandler(404)
@@ -145,3 +175,6 @@ def erreur_formulaire(e):
                            article=e.article,
                            erreur=e.message,
                            ), e.code
+
+
+app.secret_key = "(*&*&322387he738220)(*(*18352086"
