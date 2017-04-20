@@ -21,7 +21,7 @@
                         {% if not username %}
                             <li><a href="/login_form">Login</a></li>
                         {% else %}
-                            <li><a href="/logout">Logout</a></li>
+                            <li><a href="/logout">{{ username }} - Logout</a></li>
                         {% endif %}
                     </ul>
                     <form class="navbar-right navbar-form" action="/rechercher" method="GET">

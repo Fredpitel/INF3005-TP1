@@ -15,13 +15,14 @@
 # limitations under the License.
 
 from functools import wraps
-from flask import session, redirect
+from flask import session, abort
+
 
 def authentication_required(f):
     @wraps(f)
     def decorated(*args, **kwargs):
         if not is_authenticated(session):
-            return redirect('/login_form')
+            abort(401)
         return f(*args, **kwargs)
     return decorated
 

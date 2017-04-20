@@ -2,9 +2,8 @@
 
 from flask import Flask, render_template, g, request, redirect, abort, session
 from database import Database
-from article import Article
-from erreur_formulaire import FormInputError
-from authentification import authentication_required
+from authentification import authentication_required, is_authenticated
+from gmail import envoyer_courriel, envoyer_invitation
 from validations_formulaire import *
 import hashlib
 import uuid
@@ -29,11 +28,7 @@ def close_connection(exception):
 @app.route('/')
 def page_accueil():
     username = None
-    try:
-        print session['id']
-    except:
-        pass
-    if 'id' in session:
+    if is_authenticated(session):
         username = get_db().get_username(session['id'])
 
     date = datetime.date.today().isoformat()
@@ -66,11 +61,13 @@ def rechercher():
 
 
 @app.route('/admin')
-@authentication_required
 def admin():
-    articles = get_db().get_all_articles()
-    return render_template('admin.html',
-                           articles=articles)
+    if is_authenticated(session):
+        articles = get_db().get_all_articles()
+        return render_template('admin.html',
+                               articles=articles)
+    else:
+        return redirect('/login_form')
 
 
 @app.route('/modifier/<identifiant>')
@@ -87,7 +84,6 @@ def modifier_article(identifiant):
 @app.route('/modifier', methods=['POST'])
 @authentication_required
 def modifier():
-    #article_original = get_db().get_article(request.form['identifiant'])
     article = article_from_form(request.form)
 
     if article.identifiant != request.form['identifiant']:
@@ -130,8 +126,7 @@ def nouveau():
 
 @app.route('/login_form')
 def login_form():
-    return render_template('login.html',
-                           referer=request.headers["Referer"])
+    return render_template('login.html')
 
 
 @app.route('/login', methods=['POST'])
@@ -142,16 +137,16 @@ def login():
 
         if hashed_password == user[1]:
             id_session = uuid.uuid4().hex
-            get_db().save_session(id_session, username)
+            get_db().save_session(id_session, request.form['username'])
             session['id'] = id_session
-
-        return redirect('/')
-    except Exception as e:
-        print e
+            return redirect('/admin')
+        else:
+            raise Exception
+    except:
         raise FormInputError('login.html',
                              None,
                              "Nom d'usager ou mot de passe incorrect.",
-                             403)
+                             401)
 
 
 @app.route('/logout')
@@ -162,6 +157,99 @@ def logout():
         session.pop('id', None)
         get_db().delete_session(id_session)
     return redirect('/')
+
+
+@app.route('/recuperation')
+def recuperation():
+    return render_template('recuperation.html')
+
+
+@app.route('/recuperation_form', methods=['POST'])
+def recuperation_form():
+    try:
+        envoyer_courriel(request.form['username'], get_db())
+        return redirect('/login_form')
+    except:
+        raise FormInputError('recuperation.html',
+                             None,
+                             "Nom d'usager inexistant.",
+                             401)
+
+
+@app.route('/nouveau_mdp', methods=['GET'])
+def nouveau_mdp():
+    return render_template('nouveau_mdp.html',
+                           jeton=request.args['jeton'])
+
+
+@app.route('/nouveau_mdp_form', methods=['POST'])
+def nouveau_mdp_form():
+        username = request.form['username']
+        jeton = get_db().get_jeton_mdp(username)
+        if jeton[0] == request.form['jeton'] and jeton[1] > datetime.datetime.now().isoformat():
+            try:
+                user = get_db().get_user_infos(username)
+                hashed_password = hashlib.sha512(request.form['password'] + user[0]).hexdigest()
+                get_db().modifier_mdp(username, hashed_password)
+                get_db().delete_jeton_mdp(username)
+                return redirect('/login_form')
+            except:
+                raise FormInputError('nouveau_mdp.html',
+                                     None,
+                                     "Nom d'usager inexistant.",
+                                     401)
+        else:
+            get_db().delete_jeton_mdp(username)
+            raise FormInputError('recuperation_form.html',
+                                 None,
+                                 u"La limite de temps est expirée, veuillez recommencer",
+                                 401)
+
+
+@app.route('/invitation')
+def invitation():
+    return render_template('invitation.html')
+
+
+@app.route('/invitation_form', methods=['POST'])
+def invitation_form():
+    envoyer_invitation(request.form['email'], get_db())
+    return redirect('/confirmation')
+
+
+@app.route('/confirmation')
+def confirmation():
+    return render_template('confirmation.html')
+
+
+@app.route('/creer_compte', methods=['GET'])
+def creer_compte():
+    jeton = get_db().get_jeton_invitation(request.args['email'])
+    if jeton[0] == request.args['jeton'] and jeton[1] > datetime.datetime.now().isoformat():
+        return render_template('creer_compte.html',
+                               jeton=request.args['jeton'],
+                               email=request.args['email'])
+    else:
+        get_db().delete_jeton_invitation(request.form['email'])
+        raise FormInputError('creer_compte.html',
+                             None,
+                             u"La limite de temps est expirée, veuillez contacter un administrateur.",
+                             401)
+
+
+@app.route('/creer_compte_form', methods=['POST'])
+def creer_compte_form():
+    try:
+        salt = uuid.uuid4().hex
+        hashed_password = hashlib.sha512(request.form['password'] + salt).hexdigest()
+        get_db().create_user(request.form['username'], request.form['email'], salt, hashed_password)
+        get_db().delete_jeton_invitation(request.form['email'])
+        return redirect('/login_form')
+    except:
+        raise FormInputError('creer_compte.html',
+                             None,
+                             u"Ce nom d'utilisateur existe déjà.",
+                             401)
 
 
 @app.errorhandler(404)

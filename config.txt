@@ -1,0 +1,3 @@
+[infos_email]
+email = inf3005fred@gmail.com
+password = 123Monkey
