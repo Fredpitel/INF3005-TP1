@@ -1,6 +1,6 @@
 # coding=utf-8
 
-from flask import Flask, render_template, g, request, redirect, abort, session
+from flask import Flask, render_template, g, request, redirect, abort, session, jsonify
 from database import Database
 from authentification import authentication_required, is_authenticated
 from gmail import envoyer_courriel, envoyer_invitation
@@ -184,26 +184,26 @@ def nouveau_mdp():
 
 @app.route('/nouveau_mdp_form', methods=['POST'])
 def nouveau_mdp_form():
-        username = request.form['username']
-        jeton = get_db().get_jeton_mdp(username)
-        if jeton[0] == request.form['jeton'] and jeton[1] > datetime.datetime.now().isoformat():
-            try:
-                user = get_db().get_user_infos(username)
-                hashed_password = hashlib.sha512(request.form['password'] + user[0]).hexdigest()
-                get_db().modifier_mdp(username, hashed_password)
-                get_db().delete_jeton_mdp(username)
-                return redirect('/login_form')
-            except:
-                raise FormInputError('nouveau_mdp.html',
-                                     None,
-                                     "Nom d'usager inexistant.",
-                                     401)
-        else:
+    username = request.form['username']
+    jeton = get_db().get_jeton_mdp(username)
+    if jeton[0] == request.form['jeton'] and jeton[1] > datetime.datetime.now().isoformat():
+        try:
+            user = get_db().get_user_infos(username)
+            hashed_password = hashlib.sha512(request.form['password'] + user[0]).hexdigest()
+            get_db().modifier_mdp(username, hashed_password)
             get_db().delete_jeton_mdp(username)
-            raise FormInputError('recuperation_form.html',
+            return redirect('/login_form')
+        except:
+            raise FormInputError('nouveau_mdp.html',
                                  None,
-                                 u"La limite de temps est expirée, veuillez recommencer",
+                                 "Nom d'usager inexistant.",
                                  401)
+    else:
+        get_db().delete_jeton_mdp(username)
+        raise FormInputError('recuperation_form.html',
+                             None,
+                             u"La limite de temps est expirée, veuillez recommencer",
+                             401)
 
 
 @app.route('/invitation')
@@ -273,6 +273,48 @@ def check_id(identifiant):
         return "false"
     except:
         return "true"
+
+
+@app.route('/api/creer_article', methods=['POST'])
+def creer_article():
+    article = article_from_form(request.args)
+
+    try:
+        get_db().get_article(article.identifiant)
+        return "", 400
+    except:
+        get_db().nouveau(article)
+        data = {"auteur": article.auteur,
+                "titre": article.titre,
+                "identifiant": article.identifiant,
+                "date_publication": article.date,
+                "paragraphe": article.paragraphe}
+        return jsonify(data)
+
+
+@app.route('/api/articles', methods=['GET'])
+def articles():
+    articles = get_db().get_all_articles()
+
+    data = {"articles": [{"titre": each.titre,
+             "auteur": each.auteur,
+             "url": "localhost:5000/article/" + each.identifiant}
+            for each in articles]}
+    return jsonify(data)
+
+
+@app.route('/api/articles/<identifiant>', methods=['GET'])
+def infos_article(identifiant):
+    try:
+        article = get_db().get_article(identifiant)
+        data = {"auteur": article.auteur,
+                "titre": article.titre,
+                "identifiant": article.identifiant,
+                "date_publication": article.date,
+                "paragraphe": article.paragraphe}
+        return jsonify(data)
+    except:
+        return "", 400
 
 
 @app.errorhandler(404)
