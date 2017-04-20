@@ -7,7 +7,7 @@
         <div class="form-group row">
             <div class="form-group col-md-8">
                 <label>Auteur</label>
-                <input name="auteur" class="form-control" type="text" value="{{ article.auteur }}"required/>
+                <input name="auteur" class="form-control" type="text" value="{{ article.auteur }}" required/>
             </div>
             <div class="form-group col-md-4">
                 <label>Date de publication</label>
@@ -16,11 +16,12 @@
         </div>
         <div class="form-group">
             <label>Identifiant</label>
-            <input name="identifiant" class="form-control" type="text" value="{{ article.identifiant }}" required/>
+            <div id="erreur" style="display:none; color:red;" >Cet identifiant existe déjà</div>
+            <input id="identifiant" name="identifiant" class="form-control" onchange="checkId(this.value)" type="text" value="{{ article.identifiant }}" required/>
         </div>
         <div class="form-group">
             <label>Titre</label>
-            <input name="titre" class="form-control" type="text" value="{{ article.titre }}" required/>
+            <input name="titre" class="form-control" type="text" onchange="suggestId(this.value)" value="{{ article.titre }}" required/>
         </div>
         <div class="form-group">
             <label>Paragraphe</label>

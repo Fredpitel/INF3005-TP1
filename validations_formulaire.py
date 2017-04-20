@@ -41,9 +41,9 @@ def valider_date(article):
                              400)
 
 
-def valider_unique(article, template):
+def valider_unique(article, template, db):
     try:
-        get_db().get_article(article.identifiant)
+        db.get_article(article.identifiant)
     except:
         return
     raise FormInputError(template,

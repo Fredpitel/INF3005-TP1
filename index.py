@@ -112,7 +112,7 @@ def nouveau():
     article = article_from_form(request.form)
     valider_identifiant(article)
     valider_date(article)
-    valider_unique(article, 'admin_nouveau.html')
+    valider_unique(article, 'admin_nouveau.html', get_db())
 
     try:
         get_db().nouveau(article)
@@ -250,6 +250,29 @@ def creer_compte_form():
                              None,
                              u"Ce nom d'utilisateur existe déjà.",
                              401)
+
+
+@app.route('/suggest_id/<identifiant>', methods=['GET'])
+def suggest_id(identifiant):
+    serial = 0
+    nouvel_id = identifiant
+
+    while True:
+        try:
+            get_db().get_article(nouvel_id)
+            nouvel_id = identifiant + str(serial)
+            serial += 1
+        except:
+            return nouvel_id
+
+
+@app.route('/check_id/<identifiant>', methods=['GET'])
+def check_id(identifiant):
+    try:
+        get_db().get_article(identifiant)
+        return "false"
+    except:
+        return "true"
 
 
 @app.errorhandler(404)
